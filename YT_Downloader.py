@@ -1,7 +1,8 @@
 # CopyRight (c) 2023 Keno Buss
 import os
-import sys
 from pytube import YouTube, Playlist
+from pydub import AudioSegment
+
 
 def remove_invalid_chars(filename):
     invalid_chars = "<>:\"/\\|?*\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
@@ -11,9 +12,21 @@ def remove_invalid_chars(filename):
 # mp3 download
 def download_video_as_mp3(url, save_path):
     yt = YouTube(url)
-    audio = yt.streams.get_audio_only()
-    filename = remove_invalid_chars(audio.title) + ".mp3"
+    audio = yt.streams.filter(only_audio=True).first()
+    filename = remove_invalid_chars(audio.default_filename)
+
+    # check if song is already in save_path
+    if os.path.isfile(save_path + filename.replace(".mp4", ".mp3")):
+        return
+
     audio.download(save_path, filename=filename)
+
+    AudioSegment.from_file(save_path + filename)\
+        .export(save_path + filename.replace(".mp4", "") + ".mp3"
+                , format="mp3"
+                , bitrate="128k")
+    os.remove(save_path + filename)
+
 
 def download_playlist_as_mp3(url, save_path, iterator):
     playlist = Playlist(url)
@@ -23,12 +36,14 @@ def download_playlist_as_mp3(url, save_path, iterator):
         download_video_as_mp3(video_url, save_path)
         print(f"URL: {iterator}: Audio {i} / {len(video_urls)} is downloaded.")
 
+
 # mp4 download
 def download_video_as_mp4(url, save_path):
     yt = YouTube(url)
     video = yt.streams.get_highest_resolution()
     filename = remove_invalid_chars(video.title) + ".mp4"
     video.download(save_path, filename=filename)
+
 
 def download_playlist_as_mp4(url, save_path, iterator):
     playlist = Playlist(url)
@@ -39,20 +54,24 @@ def download_playlist_as_mp4(url, save_path, iterator):
         print(f"URL: {iterator}: Video {i} / {len(video_urls)} is downloaded.")
 
 
-
-def check_if_single_video_or_playlist (url, path, format, iterator):
+def check_if_single_video_or_playlist(url, path, file_type, iterator):
     if url.startswith("https://www.youtube.com/watch?v=") or url.startswith("https://www.youtu.be/watch?v="):
-        if format == "mp3" : download_video_as_mp3(url, path)
-        else : download_video_as_mp4(url, path)
+        if file_type == "mp3":
+            download_video_as_mp3(url, path)
+        else:
+            download_video_as_mp4(url, path)
     elif url.startswith("https://www.youtube.com/playlist?list=") or url.starstwith("https://youtu.be/playlist?list="):
-        if format == "mp3" : download_playlist_as_mp3(url, path, iterator)
-        else : download_playlist_as_mp4(url, path, iterator)
+        if file_type == "mp3":
+            download_playlist_as_mp3(url, path, iterator)
+        else:
+            download_playlist_as_mp4(url, path, iterator)
 
 
 def get_urls(filepath):
     with open(filepath, "r") as file:
         lines = file.readlines()
     return [line.strip() for line in lines]
+
 
 def main():
     # validate and save user inputs
@@ -69,10 +88,10 @@ def main():
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
-    # Prompt the user for the file format
+    # Prompt the user for the file file_type
     while True:
-        format = input("Do you want to download audio or video files? \n[mp3] audio [mp4] video : ").lower()
-        if format == "mp3" or format == "mp4":
+        file_type = input("Do you want to download audio or video files? \n[mp3] audio [mp4] video : ").lower()
+        if file_type == "mp3" or file_type == "mp4":
             break
         print("Invalid input!\nPlease enter 'mp3' for audio or 'mp4' for video.")
 
@@ -83,10 +102,11 @@ def main():
 
     for i, url in enumerate(urls, start=1):
         try:
-            check_if_single_video_or_playlist(url, save_path, format, i)
-            print(f"URL {i} / {len(urls)} are downloaded")
+            check_if_single_video_or_playlist(url, save_path, file_type, i)
+            print(f"URL {i} / {len(urls)} is downloaded")
         except Exception as e:
-            print(f"Something went wrong with URL {i} / {len(urls)}. Error: {e}", file=sys.stderr)
+            print(f"Something went wrong with URL {i} / {len(urls)}. \nError: {e}")
+
 
 if __name__ == "__main__":
     main()
