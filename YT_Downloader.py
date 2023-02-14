@@ -39,13 +39,13 @@ def download_video_as_mp3(url, save_path):
     os.remove(os.path.join(save_path, audio_filename))
 
 
-def download_playlist_as_mp3(url, save_path, iterator):
+def download_playlist(url, save_path, file_type, iterator):
     playlist = Playlist(url)
     video_urls = [video.embed_url for video in playlist.videos]
 
     for i, video_url in enumerate(video_urls, start=1):
-        download_video_as_mp3(video_url, save_path)
-        print(f"URL {iterator}: Downloaded audio {i} of {len(video_urls)}")
+        check_if_single_video_or_playlist(video_url, save_path, file_type)
+        print(f"URL: {iterator}: Video {i} / {len(video_urls)} is downloaded.")
 
 
 # mp4 download
@@ -54,15 +54,6 @@ def download_video_as_mp4(url, save_path):
     video = yt.streams.get_highest_resolution()
     filename = remove_invalid_chars(video.title) + ".mp4"
     video.download(save_path, filename=filename)
-
-
-def download_playlist_as_mp4(url, save_path, iterator):
-    playlist = Playlist(url)
-    video_urls = [video.embed_url for video in playlist.videos]
-
-    for i, video_url in enumerate(video_urls, start=1):
-        download_video_as_mp4(video_url, save_path)
-        print(f"URL: {iterator}: Video {i} / {len(video_urls)} is downloaded.")
 
 
 def is_single_video(url):
@@ -77,13 +68,12 @@ def check_if_single_video_or_playlist(url, path, file_type, iterator):
     if is_single_video(url):
         if file_type == "mp3":
             download_video_as_mp3(url, path)
-        else:
+        elif file_type == "mp4":
             download_video_as_mp4(url, path)
-    elif is_playlist(url):
-        if file_type == "mp3":
-            download_playlist_as_mp3(url, path, iterator)
         else:
-            download_playlist_as_mp4(url, path, iterator)
+            print(f"Invalid file type: {file_type}")
+    elif is_playlist(url):
+        download_playlist(url, path, iterator)
     else:
         print(f"Invalid URL: {url}")
 
