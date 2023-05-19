@@ -43,18 +43,22 @@ def get_urls(filepath):
         lines = file.readlines()
     return [line.strip() for line in lines]
 
+
 def main():
-    # validate and save user inputs
     # Prompt the user for the file path of the URLs
-    while True:
-        url_file = input("Enter file path of URL .txt Data (each URL in one line): ")
-        # Check if the file exists
-        if os.path.isfile(url_file):
-            break
+    default_url_file = "urls.txt"
+    url_file = input(f"Enter file path of URL .txt Data (each URL in one line) [{default_url_file}]: ")
+    if not url_file:
+        url_file = default_url_file
+    while not os.path.isfile(url_file):
         print("The file path you entered does not exist. Please try again.")
+        url_file = input(f"Enter file path of URL .txt Data (each URL in one line) [{default_url_file}]: ")
 
     # Prompt the user for the save path
-    save_path = input("Enter the save folder path : ")
+    default_save_path = os.path.join(os.getcwd(), "downloads")
+    save_path = input(f"Enter the save folder path [{default_save_path}]: ")
+    if not save_path:
+        save_path = default_save_path
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
@@ -67,6 +71,15 @@ def main():
 
     if not save_path.endswith(os.path.sep):
         save_path += os.path.sep
+
+    # Prompt the user for the file type
+    default_file_type = "mp3"
+    file_type = input(f"Do you want to download audio or video files? [mp3] audio / [mp4] video [{default_file_type}]: ").lower()
+    if not file_type:
+        file_type = default_file_type
+    while file_type not in ["mp3", "mp4"]:
+        print("Invalid input! Please enter 'mp3' for audio or 'mp4' for video.")
+        file_type = input(f"Do you want to download audio or video files? [mp3] audio / [mp4] video [{default_file_type}]: ").lower()
 
     urls = get_urls(url_file)
 
